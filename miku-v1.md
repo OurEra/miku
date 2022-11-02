@@ -22,8 +22,12 @@ Miku {
    RtmpConnection createRtmpConnection()
    GbConnection createGbConnection()
 }
+```
+
+[Tracks](./miku-v1-tracks.md)
 
 
+```c++
 Connection {
    setConnectionStateListener()
 }
@@ -75,6 +79,3 @@ MediaPluginFactory {
   createRender()
 }
 ```
-
-[Tracks](./miku-v1-tracks.md)
-

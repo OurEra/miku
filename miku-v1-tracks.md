@@ -1,15 +1,17 @@
+```c++
 Track {
   State getState()
   Stats getStats()
 }
 
 VideoTrack {
-     addRender(RenderInterface)
-     
+    addRender(RenderInterface)
+    addFilter(VideoFilterInterface)
 }
 
 AudioTrack {
   setVolume(float volume)
+  addFilter(AudioFilterInterface)
 }
 
 LocalVideoTrack : VideoTrack {
@@ -17,10 +19,13 @@ LocalVideoTrack : VideoTrack {
 }
 
 LocalAudioTack : AudioTrack {
+    addEncoder(EncoderInterface)
 }
 
-ScreenTrack : LocalVideoTack {
-
+ScreenVideoTrack : LocalVideoTack {
+    bool isSupported()    
+    startShare()
+    stopShare()
 }
 
 MicrophoneTrack : LocalAudioTrack {
@@ -28,7 +33,8 @@ MicrophoneTrack : LocalAudioTrack {
 }
 
 CameraTrack : LocalVideoTack {
-
+    startCapture();
+    stopCapture();
 }
 
 ExternalVideoTrack : LocalVideoTack {
@@ -63,3 +69,4 @@ AudioPacketSender {
     sendAudioPacket(AudioPacket packet)
 }
 
+```
