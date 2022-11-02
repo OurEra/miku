@@ -29,7 +29,8 @@ ScreenVideoTrack : LocalVideoTack {
 }
 
 MicrophoneTrack : LocalAudioTrack {
-
+    startRecord()
+    stopRecord()
 }
 
 CameraTrack : LocalVideoTack {
