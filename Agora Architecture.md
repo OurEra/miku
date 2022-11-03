@@ -245,43 +245,152 @@ IRtmpLocalUser {
 ### Track
 
 ```cpp
+
 // Audio Track
-IAudioTrack{
-    adjustPlayoutVolume
-    addAudioFilter
-    removeAudioFilter
-    // ...
+IAudioTrack {
+    int adjustPlayoutVolume(int volume)
+    bool addAudioFilter(IAudioFilter filter, AudioFilterPosition position)
+    bool removeAudioFilter(IAudioFilter filter)
+    bool addAudioSink(IAudioSinkBase sink, AudioSinkWants wants)
+    bool removeAudioSink(IAudioSinkBase sink)
 }
+
 ILocalAudioTrack : IAudioTrack{
-    setEnabled
-    getState
-    getStats
-    enableLocalPlayback
-    enableEarMonitor
-    // ...
+    struct LocalAudioTrackStats {
+      uint32_t source_id;
+      uint32_t missed_audio_frames;
+      uint32_t sent_audio_frames;
+      uint32_t pushed_audio_frames;
+      uint32_t dropped_audio_frames;
+      ...
+    };
+
+    LocalAudioTrackStats GetStats()
+    int adjustPublishVolume(int volume)
+    int enableEarMonitor(bool enable, bool includeAudioFilter)
 }
+
 IRemoteAudioTrack : IAudioTrack{
-    getStatistics
-    getState
-    // ...
+    enum REMOTE_AUDIO_STATE {
+      REMOTE_AUDIO_STATE_STOPPED = 0,  // Default state, audio is started or remote user disabled/muted audio stream
+      REMOTE_AUDIO_STATE_STARTING = 1,  // The first audio frame packet has been received
+      REMOTE_AUDIO_STATE_DECODING = 2,  // The first remote audio frame has been decoded or fronzen state ends
+    
+      REMOTE_AUDIO_STATE_FROZEN = 3,    // Remote audio is frozen, probably due to network issue
+      REMOTE_AUDIO_STATE_FAILED = 4,    // Remote audio play failed
+    };
+
+    struct RemoteAudioTrackStats {
+      uid_t uid;
+      int quality;
+      uint32_t jitter_buffer_delay;
+      int audio_loss_rate;
+      int received_bitrate;
+      int total_frozen_time;
+      int64_t received_bytes;
+      ...
+    }
+
+    bool getStatistics(RemoteAudioTrackStats& stats)
+    REMOTE_AUDIO_STATE getState()
+    int registerMediaPacketReceiver(IMediaPacketReceiver* packetReceiver)
 }
 
 // Video Track
 IVideoTrack {
-    addVideoFilter
-    addRenderer
-    // ...
+    enum VIDEO_MODULE_POSITION {
+      POSITION_POST_CAPTURER = 1 << 0,
+      POSITION_PRE_RENDERER = 1 << 1,
+      POSITION_PRE_ENCODER = 1 << 2,
+      POSITION_POST_FILTERS = 1 << 3,
+    };
+
+    bool addVideoFilter(IVideoFilter filter, VIDEO_MODULE_POSITION position)
+    bool addRenderer(VideoSinkBase>videoRenderer, VIDEO_MODULE_POSITION position)
 }
+
 ILocalVideoTrack : IVideoTrack{
-    setEnabled
-    getState
-    enableSimulcastStream
-    // ...
+    struct VideoEncoderConfiguration {
+        VIDEO_CODEC_TYPE codecType;
+        VideoDimensions dimensions;
+        int frameRate;
+        int bitrate;  
+        int minBitrate;
+        ORIENTATION_MODE orientationMode;
+        DEGRADATION_PREFERENCE degradationPreference;
+        VIDEO_MIRROR_MODE_TYPE mirrorMode;
+    }
+
+    struct SimulcastStreamConfig {
+        VideoDimensions dimensions;
+        int bitrate;
+        int framerate;
+    };
+
+    enum LOCAL_VIDEO_STREAM_STATE {
+      LOCAL_VIDEO_STREAM_STATE_STOPPED = 0,
+      LOCAL_VIDEO_STREAM_STATE_CAPTURING = 1,
+      LOCAL_VIDEO_STREAM_STATE_ENCODING = 2,
+      LOCAL_VIDEO_STREAM_STATE_FAILED = 3
+    };
+
+    struct LocalVideoTrackStats {
+        uint64_t number_of_streams = 0;
+        uint32_t frames_encoded = 0;
+        int input_frame_rate = 0;
+        int encode_frame_rate = 0;
+        int render_frame_rate = 0;
+        int target_media_bitrate_bps = 0;
+        int media_bitrate_bps = 0;
+        int total_bitrate_bps = 0;  // Include FEC
+        int width = 0;
+        int height = 0;
+        uint32_t encoder_type = 0;
+    };
+
+    int setVideoEncoderConfiguration(const VideoEncoderConfiguration& config)
+    int enableSimulcastStream(bool enabled, const SimulcastStreamConfig& config)
+    LOCAL_VIDEO_STREAM_STATE getState()
+    bool getStatistics(LocalVideoTrackStats& stats)
 }
-IRemoteVideoTrack : IVideoTrack{
-    getStatistics
-    getTrackInfo
-    // ...
+
+IRemoteVideoTrack : IVideoTrack {
+    enum REMOTE_VIDEO_STATE {
+        REMOTE_VIDEO_STATE_STOPPED = 0,
+        REMOTE_VIDEO_STATE_STARTING = 1,
+        REMOTE_VIDEO_STATE_DECODING = 2,
+        REMOTE_VIDEO_STATE_FROZEN = 3,
+        REMOTE_VIDEO_STATE_FAILED = 4,
+    };
+
+    struct VideoTrackInfo {
+        uid_t ownerUid;
+        track_id_t trackId;
+        conn_id_t connectionId;
+        VIDEO_CODEC_TYPE codecType;
+        // camera/screen
+        VIDEO_SOURCE_TYPE sourceType;
+    };
+
+    struct RemoteVideoTrackStats {
+    	uid_t uid;
+    	int delay;
+    	int width;
+    	int height;
+    	int receivedBitrate;
+    	int decoderOutputFrameRate;
+    	int rendererOutputFrameRate;
+    	int frameLossRate;
+    	int packetLossRate;
+    	int totalFrozenTime;
+    	int frozenRate;
+    };
+
+    REMOTE_VIDEO_STATE getState()
+    bool getTrackInfo(VideoTrackInfo& info)
+    bool getStatistics(RemoteVideoTrackStats& stats)
+    int registerVideoEncodedImageReceiver(IVideoEncodedImageReceiver* videoReceiver)
+    int registerMediaPacketReceiver(IMediaPacketReceiver* videoReceiver)
 }
 ```
 
@@ -348,12 +457,7 @@ IMediaPacketReceiver {
 IMediaControlPacketReceiver {
     onMediaControlPacketReceived
 }
-// Tranceiver
-IVideoFrameTransceiver {
-    getTranscodingDelayMs
-    addVideoTrack
-    // ...
-}
+
 // Factory
 IMediaNodeFactory {
     createAudioPcmDataSender
@@ -363,16 +467,6 @@ IMediaNodeFactory {
 ```
 
 ### Misc
-
-```cpp
-rtc::media::base {
-    AudioFrame{}
-    VideoFrame{}
-
-    VIDEO_PIXEL_FORMAT
-    RENDER_MODE_TYPR
-    // ...
-}
 
 agora::rtm {
     IChannel{
@@ -423,14 +517,6 @@ agora::rtc {
         // ...
     }
     
-    // 自定义扩展
-    IExtensionProvider {
-        createAudioFilter
-        createVideoFilter
-        createVideoSink
-        // ...
-    }
-    
     // Source
     IMediaPlayerSource{
         play;
@@ -439,6 +525,7 @@ agora::rtc {
         seek;
         // ...
     }
+
     ICameraCapturer{
         switchCamera
         setCameraZoom
@@ -452,6 +539,7 @@ agora::rtc {
         addAudioTrack
         // ...
     }
+
     IVideoMixerSource {
         addVideoTrack
         setStreamLayout
