@@ -3,8 +3,8 @@
 
 ```cpp
 IAgoraService {
-	IRtcConnection {
-		LocalUser {
+    IRtcConnection {
+        LocalUser {
             ILocalUserObserver {
                 onUserVideoTrackSubscribed(IRemoteVideoTrack)
             }
@@ -16,15 +16,15 @@ IAgoraService {
             ...
 
             registerLocalUserObserver(ILocalUserObserver)
-		}
-	}
+        }
+    }
 
-	IRtmpConnection {
-		RtmpLocalUser {
+    IRtmpConnection {
+        RtmpLocalUser {
             publishVideo(ILocalVideoTrack videoTrack)
             ...
-		}
-	}
+        }
+    }
 
     IMediaNodeFactory {
         ICameraCapturer createCameraCapturer()
@@ -50,12 +50,12 @@ IAgoraService {
 ```cpp
 // 全局服务类以及配置类
 IAgoraService {
-	// connection
+    // connection
     IRtcConnection createRtcConnection(RtcConnectionConfiguration cfg )
     IRtmpConnection createRtmpConnection(RtmpConnectionConfiguration cfg)
 
-	// audio track
-	// build-in mic
+    // audio track
+    // build-in mic
     ILocalAudioTrack createLocalAudioTrack()
     ILocalAudioTrack createRecordingDeviceAudioTrack(IRecordingDeviceSource audioSource, bool enableAec)
     ILocalAudioTrack createCustomAudioTrack(IAudioPcmDataSender audioSource)
@@ -63,7 +63,7 @@ IAgoraService {
     ILocalAudioTrack createCustomAudioTrack(IMediaPacketSender source)
     ILocalAudioTrack createMediaPlayerAudioTrack(IMediaPlayerSource audioSource)
 
-	// video track
+    // video track
     ILocalVideoTrack createCameraVideoTrack(ICameraCapturer videoSource)
     ILocalVideoTrack createScreenVideoTrack(IScreenCapturer videoSource)
     ILocalVideoTrack createCustomVideoTrack(IVideoFrameSender videoSource)
@@ -71,11 +71,11 @@ IAgoraService {
     ILocalVideoTrack createCustomVideoTrack(IMediaPacketSender source)
     ILocalVideoTrack createMediaPlayerVideoTrack(IMediaPlayerSource videoSource)
 
-	// media
+    // media
     IAudioDeviceManager createAudioDeviceManagerComponent(IAudioDeviceManagerObserver *observer)
     IMediaNodeFactory createMediaNodeFactory()
-	
-	// 转推服务
+    
+    // 转推服务
     IRtmpStreamingService createRtmpStreamingService(IRtcConnection rtcConnection, const char* appId)
     // 跨房服务
     IMediaRelayService createMediaRelayService(IRtcConnection rtcConnection const char* appId)
@@ -87,38 +87,75 @@ IAgoraService {
 ### Connection
 
 ```cpp
-IRtcConnection {
-	connect
-	disconnect
-	getLocalUser
-	getRemoteUsers
-	// ...
+IRTCConnection {
+    IRtcConnectionObserver{
+        onConnected(TConnectionInfo connectionInfo)
+        onDisconnected(TConnectionInfo connectionInfo)
+        onConnecting(TConnectionInfo connectionInfo)
+        onReconnecting(TConnectionInfo connectionInfo).
+        onReconnected(TConnectionInfo connectionInfo)
+        onConnectionLost(TConnectionInfo connectionInfo) 
+        onConnectionFailure(TConnectionInfo connectionInfo)
+        onUserJoined(user_id_t userId)
+        onUserLeft(user_id_t userId, USER_OFFLINE_REASON_TYPE reason)
+        onTransportStats(RtcStats stats);
+        onChangeRoleSuccess(CLIENT_ROLE_TYPE oldRole, CLIENT_ROLE_TYPE newRole)
+        onChangeRoleFailure(CLIENT_ROLE_CHANGE_FAILED_REASON reason, CLIENT_ROLE_TYPE currentRole) 
+        onUserNetworkQuality(user_id_t userId, QUALITY_TYPE txQuality, QUALITY_TYPE rxQuality)
+        onChannelMediaRelayStateChanged(int state, int code)
+    }
+    
+    TConnectionInfo {
+        conn_id_t id;
+        util::AString channelId;
+        CONNECTION_STATE_TYPE state;
+        util::AString localUserId;
+        util::AString connectionIp;
+    }
+    
+    CONNECTION_STATE_TYPE {
+        CONNECTION_STATE_DISCONNECTED = 1,
+        CONNECTION_STATE_CONNECTING = 2,
+        CONNECTION_STATE_CONNECTED = 3,
+        CONNECTION_STATE_RECONNECTING = 4,
+        CONNECTION_STATE_FAILED = 5,
+    }
+
+    connect(const char* token, const char* channelId, user_id_t userId)
+    disconnect() 
+    ILocalUser getLocalUser()
+    getRemoteUsers(UserList& users)
+    registerObserver(IRtcConnectionObserver* observer)
+    unregisterObserver(IRtcConnectionObserver* observer)
+    registerNetworkObserver(INetworkObserver* observer)
+    unregisterNetworkObserver(INetworkObserver* observer)
+    RtcStats getTransportStats()
 }
 
 IRtmpConnection {
     RTMP_CONNECTION_STATE {
-    	STATE_DISCONNECTED = 1,
-    	STATE_CONNECTING = 2,
-    	STATE_CONNECTED = 3,
-    	STATE_RECONNECTING = 4,
-    	STATE_FAILED = 5
+        STATE_DISCONNECTED = 1,
+        STATE_CONNECTING = 2,
+        STATE_CONNECTED = 3,
+        STATE_RECONNECTING = 4,
+        STATE_FAILED = 5
     };
     RtmpConnectionInfo {
-    	RTMP_CONNECTION_STATE state;
+        RTMP_CONNECTION_STATE state;
     };
     IRtmpConnectionObserver {
-    	void onConnected(RtmpConnectionInfo connectionInfo)
-    	void onDisconnected(RtmpConnectionInfo connectionInfo)
-    	void onReconnecting(RtmpConnectionInfo connectionInfo)
-    	void onConnectionLost(RtmpConnectionInfo connectionInfo)
-    	void onConnectionFailure(RtmpConnectionInfo connectionInfo,
+        void onConnected(RtmpConnectionInfo connectionInfo)
+        void onDisconnected(RtmpConnectionInfo connectionInfo)
+        void onReconnecting(RtmpConnectionInfo connectionInfo)
+        void onConnectionLost(RtmpConnectionInfo connectionInfo)
+        void onConnectionFailure(RtmpConnectionInfo connectionInfo,
                                        RTMP_CONNECTION_ERROR errCode)
     }
 
-	int connect(url)
-	int disconnect()
-	IRtmpLocalUser getRtmpLocalUser()
-	int registerObserver(IRtmpConnectionObserver observer)
+    int connect(url)
+    int disconnect()
+    IRtmpLocalUser getRtmpLocalUser()
+    int registerObserver(IRtmpConnectionObserver observer)
 }
 ```
 
@@ -126,12 +163,6 @@ IRtmpConnection {
 
 ```cpp
 ILocalUser {
-    void setUserRole(rtc::CLIENT_ROLE_TYPE role)
-    int publishVideo(ILocalVideoTrack videoTrack)
-    int subscribeVideo(user_id_t userId)
-
-    registerLocalUserObserver(ILocalUserObserver* observer)
-
     ILocalUserObserver {
         enum STREAM_PUBLISH_STATE {
           PUB_STATE_IDLE = 0,
@@ -152,15 +183,62 @@ ILocalUser {
         void onVideoPublishStateChanged(const char* channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState)
         void onVideoSubscribeStateChanged(const char* channel, uid_t uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState)
     }
+
+    void setUserRole(rtc::CLIENT_ROLE_TYPE role)
+    int publishVideo(ILocalVideoTrack videoTrack)
+    int subscribeVideo(user_id_t userId)
+
+    registerLocalUserObserver(ILocalUserObserver* observer)
+    int registerAudioFrameObserver(agora::media::IAudioFrameObserver * observer)
 }
 
-
 IRtmpLocalUser {
-	setAudioStreamConfiguration
-	setVideoStreamConfiguration
-	publishAudio
-	publishVideo
-	// ...
+	RtmpStreamingAudioConfiguration {
+		int sampleRateHz
+		int bytesPerSample
+		int numberOfChannels
+		int bitrate
+	}
+	RtmpStreamingVideoConfiguration {
+		int width
+		int height
+		int framerate
+		int bitrate
+		int maxBitrate
+		int minBitrate
+		ORIENTATION_MODE orientationMode
+	}
+	PublishAudioError {
+		PUBLISH_AUDIO_ERR_OK
+		PUBLISH_AUDIO_ERR_FAILED
+	}
+	PublishVideoError {
+		PUBLISH_VIDEO_ERR_OK
+		PUBLISH_VIDEO_ERR_FAILED
+	}
+	VideoBitrateAdjustType {
+	    None
+	    Increasing
+	    Decreasing
+	}
+	IRtmpLocalUserObserver {
+		void onAudioTrackPublishSuccess(ILocalAudioTrack audioTrack)
+		void onAudioTrackPublicationFailure(ILocalAudioTrack audioTrack, PublishAudioError error)
+		void onVideoTrackPublishSuccess(ILocalVideoTrack videoTrack)
+		void onVideoTrackPublicationFailure(ILocalVideoTrack videoTrack, PublishVideoError error)
+	}
+	
+	int setAudioStreamConfiguration(RtmpStreamingAudioConfiguration config)
+	int setVideoStreamConfiguration(RtmpStreamingVideoConfiguration config)
+	
+	void adjustVideoBitrate(VideoBitrateAdjustType type)
+	
+	int publishAudio(ILocalAudioTrack audioTrack)
+	int publishVideo(ILocalVideoTrack videoTrack)
+	
+	int registerRtmpUserObserver(IRtmpLocalUserObserver observer)
+	int registerAudioFrameObserver(IAudioFrameObserver observer)
+	int registerVideoFrameObserver(IVideoFrameObserver observer)
 }
 ```
 
@@ -169,41 +247,41 @@ IRtmpLocalUser {
 ```cpp
 // Audio Track
 IAudioTrack{
-	adjustPlayoutVolume
-	addAudioFilter
-	removeAudioFilter
-	// ...
+    adjustPlayoutVolume
+    addAudioFilter
+    removeAudioFilter
+    // ...
 }
 ILocalAudioTrack : IAudioTrack{
-	setEnabled
-	getState
-	getStats
-	enableLocalPlayback
-	enableEarMonitor
-	// ...
+    setEnabled
+    getState
+    getStats
+    enableLocalPlayback
+    enableEarMonitor
+    // ...
 }
 IRemoteAudioTrack : IAudioTrack{
-	getStatistics
-	getState
-	// ...
+    getStatistics
+    getState
+    // ...
 }
 
 // Video Track
 IVideoTrack {
-	addVideoFilter
-	addRenderer
-	// ...
+    addVideoFilter
+    addRenderer
+    // ...
 }
 ILocalVideoTrack : IVideoTrack{
-	setEnabled
-	getState
-	enableSimulcastStream
-	// ...
+    setEnabled
+    getState
+    enableSimulcastStream
+    // ...
 }
 IRemoteVideoTrack : IVideoTrack{
-	getStatistics
-	getTrackInfo
-	// ...
+    getStatistics
+    getTrackInfo
+    // ...
 }
 ```
 
@@ -212,75 +290,75 @@ IRemoteVideoTrack : IVideoTrack{
 ```cpp
 // Sender
 IAudioPcmDataSender{
-	sendAudioPcmData
+    sendAudioPcmData
 }
 IAudioEncodedFrameSender {
-	sendEncodedAudioFrame
+    sendEncodedAudioFrame
 }
 IVideoFrameSender {
-	sendVideoFrame
+    sendVideoFrame
 }
 IVideoEncodedImageSender {
-	sendEncodedVideoImage
+    sendEncodedVideoImage
 }
 IMediaPacketSender {
-	sendMediaPacket
+    sendMediaPacket
 }
 IMediaControlPacketSender {
-	sendPeerMediaControlPacket
-	sendBroadcastMediaControlPacket
+    sendPeerMediaControlPacket
+    sendBroadcastMediaControlPacket
 }
 // Sink
 IAudioSinkBase {
-	onAudioFrame
+    onAudioFrame
 }
 IVideoSinkBase {
-	setProperty
-	onFrame
-	// ...
+    setProperty
+    onFrame
+    // ...
 }
 IVideoRenderer : IVideoSinkBase {
-	setRenderMode
-	// ...
+    setRenderMode
+    // ...
 }
 // Filter
 IAudioFilterBase {
-	adaptAudioFrame
+    adaptAudioFrame
 }
 IAudioFilter : IAudioFilterBase {
-	setEnabled
-	setProperty
-	// ...
+    setEnabled
+    setProperty
+    // ...
 }
 IVideoFilterBase {
-	adaptVideoFrame
+    adaptVideoFrame
 }
 IVideoFilter : IVideoFilterBase {
-	setEnabled
-	setProperty
-	// ...
+    setEnabled
+    setProperty
+    // ...
 }
 IVideoBeautyFilter : IVideoFilter {
-	setBeautyEffectOptions
+    setBeautyEffectOptions
 }
 // Receiver
 IMediaPacketReceiver {
-	onMediaPacketReceived
+    onMediaPacketReceived
 }
 IMediaControlPacketReceiver {
-	onMediaControlPacketReceived
+    onMediaControlPacketReceived
 }
 // Tranceiver
 IVideoFrameTransceiver {
-	getTranscodingDelayMs
-	addVideoTrack
-	// ...
+    getTranscodingDelayMs
+    addVideoTrack
+    // ...
 }
 // Factory
 IMediaNodeFactory {
-	createAudioPcmDataSender
-	createAudioEncodedFrameSender
-	// ... 上面的各个 node 都有静态创建方法
+    createAudioPcmDataSender
+    createAudioEncodedFrameSender
+    // ... 上面的各个 node 都有静态创建方法
 }
 ```
 
@@ -288,97 +366,97 @@ IMediaNodeFactory {
 
 ```cpp
 rtc::media::base {
-	AudioFrame{}
-	VideoFrame{}
+    AudioFrame{}
+    VideoFrame{}
 
-	VIDEO_PIXEL_FORMAT
-	RENDER_MODE_TYPR
-	// ...
+    VIDEO_PIXEL_FORMAT
+    RENDER_MODE_TYPR
+    // ...
 }
 
 agora::rtm {
-	IChannel{
-		join
-		leave
-		sendMessage
-	}
-	IRtmService{
-		initialize
-		release
-		login
-		logout
-		sendMessageToPeer
-		createChannel
-	}
+    IChannel{
+        join
+        leave
+        sendMessage
+    }
+    IRtmService{
+        initialize
+        release
+        login
+        logout
+        sendMessageToPeer
+        createChannel
+    }
 }
 
 agora::rtc {
-	IVideoFrame {
-		enum Type
-		enum Format
-		width
-		height
-		textureId
-		resize
-		//...
-	}
-	
-	// 管理跨房
-	IMediaRelayService{
-		startChannelMediaRelay
-		updateChannelMediaRelay
-		stopChannelMediaRelay
-		// ...
-	}
-	
-	// 管理 rtmp 转发
-	IRtmpStreamingService{
-		addPublishStreamUrl
-		removePublishStreamUrl
-		setLiveTranscoding
-	}
-	
-	// 管理音频设备
-	INGAudioDeviceManager{
-		setMicrophoneVolume
-		getSpeakerVolume
-		// ...
-	}
-	
-	// 自定义扩展
-	IExtensionProvider {
-		createAudioFilter
-		createVideoFilter
-		createVideoSink
-		// ...
-	}
-	
-	// Source
-	IMediaPlayerSource{
-		play;
-		pause;
-		stop;
-		seek;
-		// ...
-	}
-	ICameraCapturer{
-		switchCamera
-		setCameraZoom
-		// ...
-	}
-	IScreenCapturer {
-		initWithScreenRect
-		// ...
-	}
-	IRemoteAudioMixerSource {
-		addAudioTrack
-		// ...
-	}
-	IVideoMixerSource {
-		addVideoTrack
-		setStreamLayout
-		// ...
-	}
+    IVideoFrame {
+        enum Type
+        enum Format
+        width
+        height
+        textureId
+        resize
+        //...
+    }
+    
+    // 管理跨房
+    IMediaRelayService{
+        startChannelMediaRelay
+        updateChannelMediaRelay
+        stopChannelMediaRelay
+        // ...
+    }
+    
+    // 管理 rtmp 转发
+    IRtmpStreamingService{
+        addPublishStreamUrl
+        removePublishStreamUrl
+        setLiveTranscoding
+    }
+    
+    // 管理音频设备
+    INGAudioDeviceManager{
+        setMicrophoneVolume
+        getSpeakerVolume
+        // ...
+    }
+    
+    // 自定义扩展
+    IExtensionProvider {
+        createAudioFilter
+        createVideoFilter
+        createVideoSink
+        // ...
+    }
+    
+    // Source
+    IMediaPlayerSource{
+        play;
+        pause;
+        stop;
+        seek;
+        // ...
+    }
+    ICameraCapturer{
+        switchCamera
+        setCameraZoom
+        // ...
+    }
+    IScreenCapturer {
+        initWithScreenRect
+        // ...
+    }
+    IRemoteAudioMixerSource {
+        addAudioTrack
+        // ...
+    }
+    IVideoMixerSource {
+        addVideoTrack
+        setStreamLayout
+        // ...
+    }
 }
 
 ```
