@@ -1,4 +1,4 @@
-## 整体结构
+### 整体结构
 
 ```cpp
 IAgoraService {
@@ -516,7 +516,7 @@ IMediaNodeFactory {
 ```
 
 
-## Capture
+### Capture
 ```c++
 ICameraCapturer {
     IDeviceInfo {
