@@ -5,24 +5,43 @@
 IAgoraService {
 	IRtcConnection {
 		LocalUser {
-			ILocalAudioTrack{Microphone}
-			ILocalAudioTrack{PcmSender}
-			ILOcalVideoTrack{Camera}
-			ILOcalVideoTrack{VideoFrameSender}
-			// ...
-		}
-		RemoteUsers {
-			IRemoteAudioTrack
-			IRemoteVideoTrack
+            ILocalUserObserver {
+                onUserVideoTrackSubscribed(IRemoteVideoTrack)
+            }
+
+            publishVideo(ILocalVideoTrack videoTrack)
+            ...
+
+            subscribeVideo(user_id_t userId)
+            ...
+
+            registerLocalUserObserver(ILocalUserObserver)
 		}
 	}
-	
+
 	IRtmpConnection {
-		LocalUser {
-			ILocalAudioTrack{Microphone}
-			ILOcalVideoTrack{Camera}
+		RtmpLocalUser {
+            publishVideo(ILocalVideoTrack videoTrack)
+            ...
 		}
 	}
+
+    IMediaNodeFactory {
+        ICameraCapturer createCameraCapturer()
+        ...
+
+        IVideoFilter createVideoFilter()
+        ...
+
+        IVideoFrameSender createVideoFrameSender()
+        ...
+    }
+
+    createCameraVideoTrack(ICameraCapturer)
+    ...
+
+    IRtcConnection createRtcConnection()
+    ...
 }
 ```
 
@@ -30,46 +49,38 @@ IAgoraService {
 
 ```cpp
 // 全局服务类以及配置类
-AudioEncoderConfiguration{}
-AgoraServiceConfiguration{}
-IAgoraService{
-	createAgoraService
-	initialize
-	release
-	setAudioSessionPreset
-	// ...
+IAgoraService {
 	// connection
-	createRtcConnection
-	createRtmpConnection
-	
+    IRtcConnection createRtcConnection(RtcConnectionConfiguration cfg )
+    IRtmpConnection createRtmpConnection(RtmpConnectionConfiguration cfg)
+
 	// audio track
 	// build-in mic
-	createLocalAudioTrack
-	createCustomAudioTrack(IAudioPcmDataSender
-						   | IRemoteAudioMixerSource
-						   | IAudioEncodedFrameSender
-						   | IMediaPacketSender)
-	createMediaPlayerAudioTrack
-	createRecordingDeviceAudioTrack
-	
+    ILocalAudioTrack createLocalAudioTrack()
+    ILocalAudioTrack createRecordingDeviceAudioTrack(IRecordingDeviceSource audioSource, bool enableAec)
+    ILocalAudioTrack createCustomAudioTrack(IAudioPcmDataSender audioSource)
+    ILocalAudioTrack createCustomAudioTrack(IAudioEncodedFrameSender audioSource)
+    ILocalAudioTrack createCustomAudioTrack(IMediaPacketSender source)
+    ILocalAudioTrack createMediaPlayerAudioTrack(IMediaPlayerSource audioSource)
+
 	// video track
-	createCameraVideoTrack(ICameraCapturer)
-	createScreenVideoTrack(videoSource)
-	createMixedVideoTrack(IVideoMixerSource)
-	createTranscodedVideoTrack(IVideoFrameTransceiver)
-	createCustomVideoTrack(IVideoFrameSender
-						   | IVideoEncodedImageSender
-						   | IMediaPacketSender)
-	createMediaPlayerVideoTrack
-	
+    ILocalVideoTrack createCameraVideoTrack(ICameraCapturer videoSource)
+    ILocalVideoTrack createScreenVideoTrack(IScreenCapturer videoSource)
+    ILocalVideoTrack createCustomVideoTrack(IVideoFrameSender videoSource)
+    ILocalVideoTrack createCustomVideoTrack(IVideoEncodedImageSender videoSource)
+    ILocalVideoTrack createCustomVideoTrack(IMediaPacketSender source)
+    ILocalVideoTrack createMediaPlayerVideoTrack(IMediaPlayerSource videoSource)
+
 	// media
-	createAudioDeviceManager
-	createMediaNodeFactory
+    IAudioDeviceManager createAudioDeviceManagerComponent(IAudioDeviceManagerObserver *observer)
+    IMediaNodeFactory createMediaNodeFactory()
 	
-	// 其他服务
-	createRtmpStreamingService
-	createMediaRelayService
-	createRtmService
+	// 转推服务
+    IRtmpStreamingService createRtmpStreamingService(IRtcConnection rtcConnection, const char* appId)
+    // 跨房服务
+    IMediaRelayService createMediaRelayService(IRtcConnection rtcConnection const char* appId)
+    // 实时消息服务
+    IRtmService createRtmService()
 }
 ```
 
@@ -83,11 +94,31 @@ IRtcConnection {
 	getRemoteUsers
 	// ...
 }
+
 IRtmpConnection {
-	connect
-	disconnect
-	getRtmpLocalUser
-	// ...
+    RTMP_CONNECTION_STATE {
+    	STATE_DISCONNECTED = 1,
+    	STATE_CONNECTING = 2,
+    	STATE_CONNECTED = 3,
+    	STATE_RECONNECTING = 4,
+    	STATE_FAILED = 5
+    };
+    RtmpConnectionInfo {
+    	RTMP_CONNECTION_STATE state;
+    };
+    IRtmpConnectionObserver {
+    	void onConnected(RtmpConnectionInfo connectionInfo)
+    	void onDisconnected(RtmpConnectionInfo connectionInfo)
+    	void onReconnecting(RtmpConnectionInfo connectionInfo)
+    	void onConnectionLost(RtmpConnectionInfo connectionInfo)
+    	void onConnectionFailure(RtmpConnectionInfo connectionInfo,
+                                       RTMP_CONNECTION_ERROR errCode)
+    }
+
+	int connect(url)
+	int disconnect()
+	IRtmpLocalUser getRtmpLocalUser()
+	int registerObserver(IRtmpConnectionObserver observer)
 }
 ```
 
@@ -95,13 +126,35 @@ IRtmpConnection {
 
 ```cpp
 ILocalUser {
-	setUserRole
-	publishAudio(ILocalAudioTrack)
-	publishVideo(ILocalVideoTrack)
-	subscribeAudio(userId)
-	subscribeVideo(userId, VideoSubscriptionOptions)
-	// ...
+    void setUserRole(rtc::CLIENT_ROLE_TYPE role)
+    int publishVideo(ILocalVideoTrack videoTrack)
+    int subscribeVideo(user_id_t userId)
+
+    registerLocalUserObserver(ILocalUserObserver* observer)
+
+    ILocalUserObserver {
+        enum STREAM_PUBLISH_STATE {
+          PUB_STATE_IDLE = 0,
+          PUB_STATE_NO_PUBLISHED = 1,
+          PUB_STATE_PUBLISHING = 2,
+          PUB_STATE_PUBLISHED = 3
+        }
+
+        enum STREAM_SUBSCRIBE_STATE {
+          SUB_STATE_IDLE = 0,
+          SUB_STATE_NO_SUBSCRIBED = 1,
+          SUB_STATE_SUBSCRIBING = 2,
+          SUB_STATE_SUBSCRIBED = 3
+        }
+
+        void onVideoTrackPublishSuccess(ILocalVideoTrack> videoTrack)
+        void onUserVideoTrackSubscribed(user_id_t userId, IRemoteVideoTrack> videoTrack)
+        void onVideoPublishStateChanged(const char* channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState)
+        void onVideoSubscribeStateChanged(const char* channel, uid_t uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState)
+    }
 }
+
+
 IRtmpLocalUser {
 	setAudioStreamConfiguration
 	setVideoStreamConfiguration
@@ -241,25 +294,6 @@ rtc::media::base {
 	VIDEO_PIXEL_FORMAT
 	RENDER_MODE_TYPR
 	// ...
-}
-
-agora {
-	// 内存管理
-	RefCounter{}
-	RefCounterObject{}
-	RefCountInterface{}
-	agora_refptr{}
-	// ...
-}
-
-agora::commons {
-	log{};
-	// ...
-}
-
-agora::base {
-	// kv 工具类
-	IAgoraParameter
 }
 
 agora::rtm {
