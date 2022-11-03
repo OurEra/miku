@@ -87,7 +87,7 @@ IAgoraService {
 
 ```cpp
 IRTCConnection {
-    IRtcConnectionObserver{
+    IRtcConnectionObserver {
         onConnected(TConnectionInfo connectionInfo)
         onDisconnected(TConnectionInfo connectionInfo)
         onConnecting(TConnectionInfo connectionInfo)
@@ -308,7 +308,7 @@ IVideoTrack {
     bool addRenderer(VideoSinkBase>videoRenderer, VIDEO_MODULE_POSITION position)
 }
 
-ILocalVideoTrack : IVideoTrack{
+ILocalVideoTrack : IVideoTrack {
     struct VideoEncoderConfiguration {
         VIDEO_CODEC_TYPE codecType;
         VideoDimensions dimensions;
