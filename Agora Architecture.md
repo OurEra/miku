@@ -192,52 +192,52 @@ ILocalUser {
 }
 
 IRtmpLocalUser {
-	RtmpStreamingAudioConfiguration {
-		int sampleRateHz
-		int bytesPerSample
-		int numberOfChannels
-		int bitrate
-	}
-	RtmpStreamingVideoConfiguration {
-		int width
-		int height
-		int framerate
-		int bitrate
-		int maxBitrate
-		int minBitrate
-		ORIENTATION_MODE orientationMode
-	}
-	PublishAudioError {
-		PUBLISH_AUDIO_ERR_OK
-		PUBLISH_AUDIO_ERR_FAILED
-	}
-	PublishVideoError {
-		PUBLISH_VIDEO_ERR_OK
-		PUBLISH_VIDEO_ERR_FAILED
-	}
-	VideoBitrateAdjustType {
-	    None
-	    Increasing
-	    Decreasing
-	}
-	IRtmpLocalUserObserver {
-		void onAudioTrackPublishSuccess(ILocalAudioTrack audioTrack)
-		void onAudioTrackPublicationFailure(ILocalAudioTrack audioTrack, PublishAudioError error)
-		void onVideoTrackPublishSuccess(ILocalVideoTrack videoTrack)
-		void onVideoTrackPublicationFailure(ILocalVideoTrack videoTrack, PublishVideoError error)
-	}
-	
-	int setAudioStreamConfiguration(RtmpStreamingAudioConfiguration config)
-	int setVideoStreamConfiguration(RtmpStreamingVideoConfiguration config)
-	
-	void adjustVideoBitrate(VideoBitrateAdjustType type)
-	
-	int publishAudio(ILocalAudioTrack audioTrack)
-	int publishVideo(ILocalVideoTrack videoTrack)
-	
-	int registerRtmpUserObserver(IRtmpLocalUserObserver observer)
-	int registerAudioFrameObserver(IAudioFrameObserver observer)
-	int registerVideoFrameObserver(IVideoFrameObserver observer)
+    RtmpStreamingAudioConfiguration {
+        int sampleRateHz
+        int bytesPerSample
+        int numberOfChannels
+        int bitrate
+    }
+    RtmpStreamingVideoConfiguration {
+        int width
+        int height
+        int framerate
+        int bitrate
+        int maxBitrate
+        int minBitrate
+        ORIENTATION_MODE orientationMode
+    }
+    PublishAudioError {
+        PUBLISH_AUDIO_ERR_OK
+        PUBLISH_AUDIO_ERR_FAILED
+    }
+    PublishVideoError {
+        PUBLISH_VIDEO_ERR_OK
+        PUBLISH_VIDEO_ERR_FAILED
+    }
+    VideoBitrateAdjustType {
+        None
+        Increasing
+        Decreasing
+    }
+    IRtmpLocalUserObserver {
+        void onAudioTrackPublishSuccess(ILocalAudioTrack audioTrack)
+        void onAudioTrackPublicationFailure(ILocalAudioTrack audioTrack, PublishAudioError error)
+        void onVideoTrackPublishSuccess(ILocalVideoTrack videoTrack)
+        void onVideoTrackPublicationFailure(ILocalVideoTrack videoTrack, PublishVideoError error)
+    }
+    
+    int setAudioStreamConfiguration(RtmpStreamingAudioConfiguration config)
+    int setVideoStreamConfiguration(RtmpStreamingVideoConfiguration config)
+    
+    void adjustVideoBitrate(VideoBitrateAdjustType type)
+    
+    int publishAudio(ILocalAudioTrack audioTrack)
+    int publishVideo(ILocalVideoTrack videoTrack)
+    
+    int registerRtmpUserObserver(IRtmpLocalUserObserver observer)
+    int registerAudioFrameObserver(IAudioFrameObserver observer)
+    int registerVideoFrameObserver(IVideoFrameObserver observer)
 }
 ```
 
@@ -372,17 +372,17 @@ IRemoteVideoTrack : IVideoTrack {
     };
 
     struct RemoteVideoTrackStats {
-    	uid_t uid;
-    	int delay;
-    	int width;
-    	int height;
-    	int receivedBitrate;
-    	int decoderOutputFrameRate;
-    	int rendererOutputFrameRate;
-    	int frameLossRate;
-    	int packetLossRate;
-    	int totalFrozenTime;
-    	int frozenRate;
+        uid_t uid;
+        int delay;
+        int width;
+        int height;
+        int receivedBitrate;
+        int decoderOutputFrameRate;
+        int rendererOutputFrameRate;
+        int frameLossRate;
+        int packetLossRate;
+        int totalFrozenTime;
+        int frozenRate;
     };
 
     REMOTE_VIDEO_STATE getState()
@@ -397,121 +397,121 @@ IRemoteVideoTrack : IVideoTrack {
 ```c++
 // Sender
 IAudioPcmDataSender{
-	int sendAudioPcmData(void* audio_data, 
-						 uint32_t capture_timestamp, 
-						 size_t samples_per_channel, 
-						 size_t bytes_per_sample, 
-						 size_t number_of_channels, 
-						 uint32_t sample_rate)
+    int sendAudioPcmData(void* audio_data, 
+                         uint32_t capture_timestamp, 
+                         size_t samples_per_channel, 
+                         size_t bytes_per_sample, 
+                         size_t number_of_channels, 
+                         uint32_t sample_rate)
 }
 
 IAudioEncodedFrameSender {
-	bool sendEncodedAudioFrame(uint8_t* payload_data, 
-							   size_t payload_size, 
-							   EncodedAudioFrameInfo audioFrameInfo)
+    bool sendEncodedAudioFrame(uint8_t* payload_data, 
+                               size_t payload_size, 
+                               EncodedAudioFrameInfo audioFrameInfo)
 }
 
 IVideoFrameSender {
-	int sendVideoFrame(ExternalVideoFrame videoFrame)
+    int sendVideoFrame(ExternalVideoFrame videoFrame)
 }
 
 IVideoEncodedImageSender {
-	bool sendEncodedVideoImage(uint8_t* imageBuffer, 
-							   size_t length, 
-							   EncodedVideoFrameInfo videoEncodedFrameInfo)
+    bool sendEncodedVideoImage(uint8_t* imageBuffer, 
+                               size_t length, 
+                               EncodedVideoFrameInfo videoEncodedFrameInfo)
 }
 
 IMediaPacketSender {
-	int sendMediaPacket(uint8_t *packet, 
-						size_t length, 
-						PacketOptions options)
+    int sendMediaPacket(uint8_t *packet, 
+                        size_t length, 
+                        PacketOptions options)
 }
 
 IMediaControlPacketSender {
-	int sendPeerMediaControlPacket(user_id_t userId,
-								   uint8_t *packet,
+    int sendPeerMediaControlPacket(user_id_t userId,
+                                   uint8_t *packet,
                                    size_t length)
-	sendBroadcastMediaControlPacket(uint8_t *packet, size_t length)
+    sendBroadcastMediaControlPacket(uint8_t *packet, size_t length)
 }
 
 // Sink
 IAudioSinkBase {
-	bool onAudioFrame(AudioPcmFrame audioFrame)
+    bool onAudioFrame(AudioPcmFrame audioFrame)
 }
 
 IVideoSinkBase {
-	int setProperty(char* key, void* buf, int buf_size)
-	int onFrame(VideoFrame videoFrame)
+    int setProperty(char* key, void* buf, int buf_size)
+    int onFrame(VideoFrame videoFrame)
 }
 
 IVideoRenderer : IVideoSinkBase {
-	setRenderMode
+    setRenderMode
 }
 
 // Filter
 IAudioFilterBase {
-	bool adaptAudioFrame(AudioPcmFrame inAudioFrame, AudioPcmFrame adaptedFrame)
+    bool adaptAudioFrame(AudioPcmFrame inAudioFrame, AudioPcmFrame adaptedFrame)
 }
 
 IAudioFilter : IAudioFilterBase {
-	void setEnabled(bool enable)
-	int setProperty(char* key, void* buf, int buf_size)
+    void setEnabled(bool enable)
+    int setProperty(char* key, void* buf, int buf_size)
 }
 
 IVideoFilterBase {
-	bool adaptVideoFrame(VideoFrame capturedFrame, VideoFrame adaptedFrame)
+    bool adaptVideoFrame(VideoFrame capturedFrame, VideoFrame adaptedFrame)
 }
 
 IVideoFilter : IVideoFilterBase {
-	void setEnabled(bool enable)
-	int setProperty(char* key, void* buf, size_t buf_size)
+    void setEnabled(bool enable)
+    int setProperty(char* key, void* buf, size_t buf_size)
 }
 
 IVideoBeautyFilter : IVideoFilter {
-	BeautyOptions {
-		LIGHTENING_CONTRAST_LEVEL {
-			LIGHTENING_CONTRAST_LOW = 0,
-			LIGHTENING_CONTRAST_NORMAL,
-			LIGHTENING_CONTRAST_HIGH
-		};
-		LIGHTENING_CONTRAST_LEVEL lighteningContrastLevel;
-		float lighteningLevel;
-		float smoothnessLevel;
-		float rednessLevel;
-	};
-	int setBeautyEffectOptions(bool enabled, BeautyOptions options)
+    BeautyOptions {
+        LIGHTENING_CONTRAST_LEVEL {
+            LIGHTENING_CONTRAST_LOW = 0,
+            LIGHTENING_CONTRAST_NORMAL,
+            LIGHTENING_CONTRAST_HIGH
+        };
+        LIGHTENING_CONTRAST_LEVEL lighteningContrastLevel;
+        float lighteningLevel;
+        float smoothnessLevel;
+        float rednessLevel;
+    };
+    int setBeautyEffectOptions(bool enabled, BeautyOptions options)
 }
 
 // Receiver
 IMediaPacketReceiver {
-	bool onMediaPacketReceived(uint8_t *packet, 
-							   size_t length, 
-							   PacketOptions options)
+    bool onMediaPacketReceived(uint8_t *packet, 
+                               size_t length, 
+                               PacketOptions options)
 }
 
 // Factory
 IMediaNodeFactory {
-	MEDIA_PLAYER_SOURCE_TYPE {
-		MEDIA_PLAYER_SOURCE_DEFAULT,
-		MEDIA_PLAYER_SOURCE_FULL_FEATURED,
-		MEDIA_PLAYER_SOURCE_SIMPLE,
-	};
+    MEDIA_PLAYER_SOURCE_TYPE {
+        MEDIA_PLAYER_SOURCE_DEFAULT,
+        MEDIA_PLAYER_SOURCE_FULL_FEATURED,
+        MEDIA_PLAYER_SOURCE_SIMPLE,
+    };
 
-	IAudioPcmDataSender createAudioPcmDataSender()
-	IAudioEncodedFrameSender createAudioEncodedFrameSender()
-	IVideoFrameSender createVideoFrameSender()
-	IVideoEncodedImageSender createVideoEncodedImageSender()
-	IMediaPacketSender createMediaPacketSender()
-	IMediaPlayerSource createMediaPlayerSource(MEDIA_PLAYER_SOURCE_TYPE type)
-	
-	IAudioFilter createAudioFilter(char* name, char* vendor)
-	IVideoFilter createVideoFilter(char* name, char* vendor)
-	
-	IVideoRenderer createVideoRenderer()
-	IVideoSinkBase createVideoSink(char* name, char* vendor)
+    IAudioPcmDataSender createAudioPcmDataSender()
+    IAudioEncodedFrameSender createAudioEncodedFrameSender()
+    IVideoFrameSender createVideoFrameSender()
+    IVideoEncodedImageSender createVideoEncodedImageSender()
+    IMediaPacketSender createMediaPacketSender()
+    IMediaPlayerSource createMediaPlayerSource(MEDIA_PLAYER_SOURCE_TYPE type)
+    
+    IAudioFilter createAudioFilter(char* name, char* vendor)
+    IVideoFilter createVideoFilter(char* name, char* vendor)
+    
+    IVideoRenderer createVideoRenderer()
+    IVideoSinkBase createVideoSink(char* name, char* vendor)
 
-	ICameraCapturer createCameraCapturer()
-	IScreenCapturer createScreenCapturer()
+    ICameraCapturer createCameraCapturer()
+    IScreenCapturer createScreenCapturer()
 }
 ```
 
