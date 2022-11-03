@@ -1,4 +1,3 @@
-
 ## 整体结构
 
 ```cpp
@@ -335,17 +334,17 @@ ILocalVideoTrack : IVideoTrack{
     };
 
     struct LocalVideoTrackStats {
-        uint64_t number_of_streams = 0;
-        uint32_t frames_encoded = 0;
-        int input_frame_rate = 0;
-        int encode_frame_rate = 0;
-        int render_frame_rate = 0;
-        int target_media_bitrate_bps = 0;
-        int media_bitrate_bps = 0;
-        int total_bitrate_bps = 0;  // Include FEC
-        int width = 0;
-        int height = 0;
-        uint32_t encoder_type = 0;
+        uint64_t number_of_streams 
+        uint32_t frames_encoded 
+        int input_frame_rate 
+        int encode_frame_rate 
+        int render_frame_rate;
+        int target_media_bitrate_bps 
+        int media_bitrate_bps 
+        int total_bitrate_bps  // Include FEC
+        int width 
+        int height
+        uint32_t encoder_type
     };
 
     int setVideoEncoderConfiguration(const VideoEncoderConfiguration& config)
@@ -395,79 +394,191 @@ IRemoteVideoTrack : IVideoTrack {
 ```
 
 ### Media Node
-
-```cpp
+```c++
 // Sender
 IAudioPcmDataSender{
-    sendAudioPcmData
+	int sendAudioPcmData(void* audio_data, 
+						 uint32_t capture_timestamp, 
+						 size_t samples_per_channel, 
+						 size_t bytes_per_sample, 
+						 size_t number_of_channels, 
+						 uint32_t sample_rate)
 }
+
 IAudioEncodedFrameSender {
-    sendEncodedAudioFrame
+	bool sendEncodedAudioFrame(uint8_t* payload_data, 
+							   size_t payload_size, 
+							   EncodedAudioFrameInfo audioFrameInfo)
 }
+
 IVideoFrameSender {
-    sendVideoFrame
+	int sendVideoFrame(ExternalVideoFrame videoFrame)
 }
+
 IVideoEncodedImageSender {
-    sendEncodedVideoImage
+	bool sendEncodedVideoImage(uint8_t* imageBuffer, 
+							   size_t length, 
+							   EncodedVideoFrameInfo videoEncodedFrameInfo)
 }
+
 IMediaPacketSender {
-    sendMediaPacket
+	int sendMediaPacket(uint8_t *packet, 
+						size_t length, 
+						PacketOptions options)
 }
+
 IMediaControlPacketSender {
-    sendPeerMediaControlPacket
-    sendBroadcastMediaControlPacket
+	int sendPeerMediaControlPacket(user_id_t userId,
+								   uint8_t *packet,
+                                   size_t length)
+	sendBroadcastMediaControlPacket(uint8_t *packet, size_t length)
 }
+
 // Sink
 IAudioSinkBase {
-    onAudioFrame
+	bool onAudioFrame(AudioPcmFrame audioFrame)
 }
+
 IVideoSinkBase {
-    setProperty
-    onFrame
-    // ...
+	int setProperty(char* key, void* buf, int buf_size)
+	int onFrame(VideoFrame videoFrame)
 }
+
 IVideoRenderer : IVideoSinkBase {
-    setRenderMode
-    // ...
+	setRenderMode
 }
+
 // Filter
 IAudioFilterBase {
-    adaptAudioFrame
+	bool adaptAudioFrame(AudioPcmFrame inAudioFrame, AudioPcmFrame adaptedFrame)
 }
+
 IAudioFilter : IAudioFilterBase {
-    setEnabled
-    setProperty
-    // ...
+	void setEnabled(bool enable)
+	int setProperty(char* key, void* buf, int buf_size)
 }
+
 IVideoFilterBase {
-    adaptVideoFrame
+	bool adaptVideoFrame(VideoFrame capturedFrame, VideoFrame adaptedFrame)
 }
+
 IVideoFilter : IVideoFilterBase {
-    setEnabled
-    setProperty
-    // ...
+	void setEnabled(bool enable)
+	int setProperty(char* key, void* buf, size_t buf_size)
 }
+
 IVideoBeautyFilter : IVideoFilter {
-    setBeautyEffectOptions
+	BeautyOptions {
+		LIGHTENING_CONTRAST_LEVEL {
+			LIGHTENING_CONTRAST_LOW = 0,
+			LIGHTENING_CONTRAST_NORMAL,
+			LIGHTENING_CONTRAST_HIGH
+		};
+		LIGHTENING_CONTRAST_LEVEL lighteningContrastLevel;
+		float lighteningLevel;
+		float smoothnessLevel;
+		float rednessLevel;
+	};
+	int setBeautyEffectOptions(bool enabled, BeautyOptions options)
 }
+
 // Receiver
 IMediaPacketReceiver {
-    onMediaPacketReceived
-}
-IMediaControlPacketReceiver {
-    onMediaControlPacketReceived
+	bool onMediaPacketReceived(uint8_t *packet, 
+							   size_t length, 
+							   PacketOptions options)
 }
 
 // Factory
 IMediaNodeFactory {
-    createAudioPcmDataSender
-    createAudioEncodedFrameSender
-    // ... 上面的各个 node 都有静态创建方法
+	MEDIA_PLAYER_SOURCE_TYPE {
+		MEDIA_PLAYER_SOURCE_DEFAULT,
+		MEDIA_PLAYER_SOURCE_FULL_FEATURED,
+		MEDIA_PLAYER_SOURCE_SIMPLE,
+	};
+
+	IAudioPcmDataSender createAudioPcmDataSender()
+	IAudioEncodedFrameSender createAudioEncodedFrameSender()
+	IVideoFrameSender createVideoFrameSender()
+	IVideoEncodedImageSender createVideoEncodedImageSender()
+	IMediaPacketSender createMediaPacketSender()
+	IMediaPlayerSource createMediaPlayerSource(MEDIA_PLAYER_SOURCE_TYPE type)
+	
+	IAudioFilter createAudioFilter(char* name, char* vendor)
+	IVideoFilter createVideoFilter(char* name, char* vendor)
+	
+	IVideoRenderer createVideoRenderer()
+	IVideoSinkBase createVideoSink(char* name, char* vendor)
+
+	ICameraCapturer createCameraCapturer()
+	IScreenCapturer createScreenCapturer()
+}
+```
+
+
+## Capture
+```c++
+ICameraCapturer {
+    IDeviceInfo {
+      void release()
+      uint32_t NumberOfDevices() 
+      int32_t GetDeviceName(uint32_t deviceNumber, deviceNameUTF8,
+                                    uint32_t deviceNameLength, deviceUniqueIdUTF8,
+                                    uint32_t deviceUniqueIdLength, productUniqueIdUTF8,
+                                    uint32_t productUniqueIdLength) 
+      int32_t NumberOfCapabilities(deviceUniqueIdUTF8)
+      int32_t GetCapability(deviceUniqueIdUTF8,
+                                    uint32_t deviceCapabilityNumber,
+                                    VideoFormat& capability) 
+    }
+
+    enum CAMERA_SOURCE {
+      CAMERA_BACK,
+      CAMERA_FRONT,
+    };
+
+    VideoFormat {
+      OPTIONAL_ENUM_SIZE_T {
+        kMaxWidthInPixels = 3840,
+        kMaxHeightInPixels = 2160,
+        kMaxFps = 60,
+      };
+      int width; 
+      int height;
+      int fps;
+    }
+
+    ICameraCaptureObserver {
+      void onCameraFocusAreaChanged(int imageWidth, int imageHeight, int x, int y) 
+      void onFacePositionChanged(int imageWidth, int imageHeight, Rectangle vecRectangle,int vecDistance, int numFaces)
+      void onCameraExposureAreaChanged(int x, int y, int width, int height)
+      void onCameraStateChanged(CAMERA_STATE state, CAMERA_SOURCE source) 
+    }
+
+    IDeviceInfo createDeviceInfo()
+
+    int setCameraSource(CAMERA_SOURCE source) 
+    CAMERA_SOURCE getCameraSource()
+    void switchCamera()
+    bool isZoomSupported()
+
+    int initWithDeviceId(deviceId)
+    int initWithDeviceName(deviceName) 
+    void setCaptureFormat(const VideoFormat& format) 
+    VideoFormat getCaptureFormat()
+    int registerCameraObserver(ICameraCaptureObserver observer) 
+    int unregisterCameraObserver(ICameraCaptureObserver observer)
+}
+
+IScreenCapturer{
+    int initWithDisplayId(uint32_t displayId, Rectangle regionRect)
+    int updateScreenCaptureRegion(Rectangle regionRect)
+    void setScreenOrientation(VIDEO_ORIENTATION orientation)
+    void setFrameRate(int rate) 
 }
 ```
 
 ### Misc
-
 agora::rtm {
     IChannel{
         join
